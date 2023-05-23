@@ -5,14 +5,17 @@ using Robust.Shared.Network;
 
 namespace Content.Client.Administration.Systems
 {
+    /// <summary>
+    ///     AHelp message system.
+    /// </summary>
     [UsedImplicitly]
     public sealed class BwoinkSystem : SharedBwoinkSystem
     {
-        public event EventHandler<BwoinkTextMessage>? OnBwoinkTextMessageRecieved;
+        public event EventHandler<BwoinkTextMessage>? OnBwoinkTextMessageReceived;
 
         protected override void OnBwoinkTextMessage(BwoinkTextMessage message, EntitySessionEventArgs eventArgs)
         {
-            OnBwoinkTextMessageRecieved?.Invoke(this, message);
+            OnBwoinkTextMessageReceived?.Invoke(this, message);
         }
 
         public void Send(NetUserId channelId, string text)

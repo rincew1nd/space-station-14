@@ -21,6 +21,9 @@ using Robust.Shared.Utility;
 
 namespace Content.Server.Administration.Systems
 {
+    /// <summary>
+    ///     AHelp text message.
+    /// </summary>
     [UsedImplicitly]
     public sealed class BwoinkSystem : SharedBwoinkSystem
     {

@@ -97,13 +97,13 @@ public sealed class AHelpUIController: UIController, IOnStateChanged<GameplaySta
     public void OnSystemLoaded(BwoinkSystem system)
     {
         _bwoinkSystem = system;
-        _bwoinkSystem.OnBwoinkTextMessageRecieved += RecievedBwoink;
+        _bwoinkSystem.OnBwoinkTextMessageReceived += ReceivedBwoink;
     }
 
     public void OnSystemUnloaded(BwoinkSystem system)
     {
         DebugTools.Assert(_bwoinkSystem != null);
-        _bwoinkSystem!.OnBwoinkTextMessageRecieved -= RecievedBwoink;
+        _bwoinkSystem!.OnBwoinkTextMessageReceived -= ReceivedBwoink;
         _bwoinkSystem = null;
     }
 
@@ -115,15 +115,22 @@ public sealed class AHelpUIController: UIController, IOnStateChanged<GameplaySta
         AhelpButton.Pressed = pressed;
     }
 
-    private void RecievedBwoink(object? sender, SharedBwoinkSystem.BwoinkTextMessage message)
+    /// <summary>
+    ///     Administrator message received.
+    /// </summary>
+    /// <param name="sender"></param>
+    /// <param name="message"><see cref="BwoinkTextMessage"/></param>
+    private void ReceivedBwoink(object? sender, SharedBwoinkSystem.BwoinkTextMessage message)
     {
         Logger.InfoS("c.s.go.es.bwoink", $"@{message.UserId}: {message.Text}");
+
         var localPlayer = _playerManager.LocalPlayer;
         if (localPlayer == null)
         {
             return;
         }
-        if (localPlayer.UserId != message.TrueSender)
+
+        if (localPlayer.UserId == message.UserId)
         {
             SoundSystem.Play("/Audio/Effects/adminhelp.ogg", Filter.Local());
             _clyde.RequestWindowAttention();

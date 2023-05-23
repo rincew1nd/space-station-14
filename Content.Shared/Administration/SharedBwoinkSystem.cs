@@ -4,6 +4,9 @@ using Robust.Shared.Serialization;
 
 namespace Content.Shared.Administration
 {
+    /// <summary>
+    ///     Personal text message.
+    /// </summary>
     public abstract class SharedBwoinkSystem : EntitySystem
     {
         // System users
@@ -25,19 +28,42 @@ namespace Content.Shared.Administration
         {
         }
 
+        /// <summary>
+        ///     Personal text message.
+        /// </summary>
         [Serializable, NetSerializable]
         public sealed class BwoinkTextMessage : EntityEventArgs
         {
+            /// <summary>
+            ///     Message send date.
+            /// </summary>
             public DateTime SentAt { get; }
 
+            /// <summary>
+            ///     Receiver user identifier.
+            /// </summary>
             public NetUserId UserId { get; }
 
-            // This is ignored from the client.
-            // It's checked by the client when receiving a message from the server for bwoink noises.
-            // This could be a boolean "Incoming", but that would require making a second instance.
+            /// <summary>
+            ///     Sender user identifier.
+            ///     This is ignored from the client.
+            ///     It's checked by the client when receiving a message from the server for bwoink noises.
+            ///     This could be a boolean "Incoming", but that would require making a second instance.
+            /// </summary>
             public NetUserId TrueSender { get; }
+
+            /// <summary>
+            ///     Message text.
+            /// </summary>
             public string Text { get; }
 
+            /// <summary>
+            ///     .ctor
+            /// </summary>
+            /// <param name="userId">Receiver user identifier</param>
+            /// <param name="trueSender">Sender user identifier</param>
+            /// <param name="text">Message text</param>
+            /// <param name="sentAt">Message send date</param>
             public BwoinkTextMessage(NetUserId userId, NetUserId trueSender, string text, DateTime? sentAt = default)
             {
                 SentAt = sentAt ?? DateTime.Now;
