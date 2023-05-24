@@ -285,7 +285,7 @@ public sealed class ZombieRuleSystem : GameRuleSystem<ZombieRuleComponent>
 
             DebugTools.AssertNotNull(mind.OwnedEntity);
 
-            mind.AddRole(new AntagonistRole(mind, _prototypeManager.Index<AntagPrototype>(component.PatientZeroPrototypeID)));
+            mind.AddRole(new ZombieRole(mind, _prototypeManager.Index<AntagPrototype>(component.PatientZeroPrototypeID)));
 
             var inCharacterName = string.Empty;
             // Create some variation between the times of each zombie, relative to the time of the group as a whole.

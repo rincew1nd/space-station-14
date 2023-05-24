@@ -11,7 +11,7 @@ namespace Content.Server.Roles
         /// <summary>
         ///     Path to antagonist alert sound.
         /// </summary>
-        private const string AntagonistAlert = "/Audio/Ambience/Antag/antagonistalert.ogg";
+        protected virtual string AntagonistAlert => "/Audio/Ambience/Antag/antagonist_start.ogg";
 
         public AntagPrototype Prototype { get; }
 

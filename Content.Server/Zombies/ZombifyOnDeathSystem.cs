@@ -215,7 +215,7 @@ namespace Content.Server.Zombies
             if (mindcomp.Mind != null && mindcomp.Mind.TryGetSession(out var session))
             {
                 //Zombie role for player manifest
-                mindcomp.Mind.AddRole(new AntagonistRole(mindcomp.Mind, _proto.Index<AntagPrototype>(zombiecomp.ZombieRoleId)));
+                mindcomp.Mind.AddRole(new ZombieRole(mindcomp.Mind, _proto.Index<AntagPrototype>(zombiecomp.ZombieRoleId)));
                 //Greeting message for new bebe zombers
                 _chatMan.DispatchServerMessage(session, Loc.GetString("zombie-infection-greeting"));
             }
