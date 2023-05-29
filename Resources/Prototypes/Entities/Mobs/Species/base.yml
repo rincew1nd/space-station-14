@@ -302,6 +302,23 @@
     price: 1500 # Kidnapping a living person and selling them for cred is a good move.
     deathPenalty: 0.01 # However they really ought to be living and intact, otherwise they're worth 100x less.
   - type: TTS # Corvax-TTS
+  - type: LyingDown
+    lie-down-action:
+      type: instantAction
+      id: LieDown
+      icon: Interface/Actions/lie-down-state.png
+      name: action-name-liedown
+      itemIconStyle: NoItem
+      event: !type:LieDownActionEvent
+      checkCanInteract: true
+    stand-up-action:
+      type: instantAction
+      id: StandUp
+      icon: Interface/Actions/stand-up-state.png
+      name: action-name-standup
+      itemIconStyle: NoItem
+      event: !type:StandUpActionEvent
+      checkCanInteract: true
 
 - type: entity
   save: false
