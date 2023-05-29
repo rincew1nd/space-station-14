@@ -23,22 +23,28 @@ namespace Content.Shared.LieDown
             SubscribeLocalEvent<LyingDownComponent, StandUpActionEvent>(OnStandUpAction);
             SubscribeLocalEvent<LyingDownComponent, LieDownActionEvent>(OnLieDownAction);
             SubscribeLocalEvent<LyingDownComponent, InteractHandEvent>(OnInteractHand);
-            SubscribeLocalEvent<LyingDownComponent, GetVerbsEvent<AlternativeVerb>>(AddWakeVerb);
+            SubscribeLocalEvent<LyingDownComponent, GetVerbsEvent<AlternativeVerb>>(AddStandUpVerb);
             SubscribeLocalEvent<LyingDownComponent, ExaminedEvent>(OnExamined);
             SubscribeLocalEvent<LyingDownComponent, RefreshMovementSpeedModifiersEvent>(OnRefresh);
 
+            // Bind keybinds to lie down action
             SubscribeNetworkEvent<ChangeStandingStateEvent>(OnChangeAction);
-
             CommandBinds.Builder
                 .Bind(ContentKeyFunctions.LieDownStandUp, InputCmdHandler.FromDelegate(ChangeLyingState))
                 .Register<SharedLieDownSystem>();
         }
 
+        /// <summary>
+        ///     Send an update event when player pressed keybind.
+        /// </summary>
         private void ChangeLyingState(ICommonSession? session)
         {
             RaiseNetworkEvent(new ChangeStandingStateEvent());
         }
 
+        /// <summary>
+        ///     Process player event, that pressed keybind.
+        /// </summary>
         private void OnChangeAction(ChangeStandingStateEvent msg, EntitySessionEventArgs args)
         {
             if (!args.SenderSession.AttachedEntity.HasValue)
@@ -57,16 +63,33 @@ namespace Content.Shared.LieDown
             }
         }
 
+        /// <summary>
+        ///     Update movement speed according to the lying state.
+        ///     TODO: Move it somewhere else. How could actions be added separately?
+        /// </summary>
         private void OnRefresh(EntityUid uid, LyingDownComponent component, RefreshMovementSpeedModifiersEvent args)
         {
-            args.ModifySpeed(component.MovementSpeedDebuff, component.MovementSpeedDebuff);
+            if (_standing.IsDown(uid))
+            {
+                args.ModifySpeed(0.4f, 0.4f);
+            }
+            else
+            {
+                args.ModifySpeed(1f, 1f);
+            }
         }
 
+        /// <summary>
+        ///     When component is added to player, add an action.
+        /// </summary>
         private void OnComponentInit(EntityUid uid, LyingDownComponent component, ComponentStartup args)
         {
             _actions.AddAction(uid, component.LieDownAction, uid);
         }
 
+        /// <summary>
+        ///     Change available to player actions.
+        /// </summary>
         private void SwitchActions(EntityUid uid, LyingDownComponent component)
         {
             if (_standing.IsDown(uid))
@@ -81,10 +104,17 @@ namespace Content.Shared.LieDown
             }
         }
 
+        /// <summary>
+        ///     Event that being risen on stand up.
+        /// </summary>
         private void OnStandUpAction(EntityUid uid, LyingDownComponent component, StandUpActionEvent args)
         {
             TryStandUp(uid, component);
         }
+
+        /// <summary>
+        ///     Event that being risen on lie down.
+        /// </summary>
         private void OnLieDownAction(EntityUid uid, LyingDownComponent component, LieDownActionEvent args)
         {
             TryLieDown(uid, component);
@@ -98,9 +128,18 @@ namespace Content.Shared.LieDown
             TryStandUp(args.Target, component);
         }
 
-        private void AddWakeVerb(EntityUid uid, LyingDownComponent component, GetVerbsEvent<AlternativeVerb> args)
+        /// <summary>
+        ///     Add a verb to player menu to make him stand up.
+        /// </summary>
+        private void AddStandUpVerb(EntityUid uid, LyingDownComponent component, GetVerbsEvent<AlternativeVerb> args)
         {
             if (!args.CanInteract || !args.CanAccess)
+                return;
+
+            if (args.Target == args.User)
+                return;
+
+            if (!_standing.IsDown(uid))
                 return;
 
             AlternativeVerb verb = new()
@@ -121,7 +160,7 @@ namespace Content.Shared.LieDown
         /// </summary>
         private void OnExamined(EntityUid uid, LyingDownComponent component, ExaminedEvent args)
         {
-            if (args.IsInDetailsRange)
+            if (args.IsInDetailsRange && _standing.IsDown(uid))
             {
                 args.PushMarkup(Loc.GetString("lying-down-examined", ("target", Identity.Entity(uid, EntityManager))));
             }
@@ -134,9 +173,6 @@ namespace Content.Shared.LieDown
 
             Logger.Debug("{uid} tried to stand up", uid);
 
-            component.MovementSpeedDebuff = 1f;
-            _movement.RefreshMovementSpeedModifiers(uid);
-
             SwitchActions(uid, component);
         }
 
@@ -146,9 +182,6 @@ namespace Content.Shared.LieDown
                 return;
 
             Logger.Debug("{uid} tried to lie down", uid);
-
-            component.MovementSpeedDebuff = 0.4f;
-            _movement.RefreshMovementSpeedModifiers(uid);
 
             SwitchActions(uid, component);
         }

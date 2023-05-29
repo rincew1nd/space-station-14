@@ -31,10 +31,6 @@ public sealed class LyingDownComponent : Component
     /// </summary>
     [DataField("make-to-stand-up-action", customTypeSerializer: typeof(PrototypeIdSerializer<InstantActionPrototype>))]
     public string? MakeToStandUpAction = "action-name-make-standup";
-
-    [ViewVariables(VVAccess.ReadWrite)]
-    [DataField("movementSpeedDebuff")]
-    public float MovementSpeedDebuff { get; set; } = 1f;
 }
 
 public sealed class LieDownActionEvent : InstantActionEvent {}

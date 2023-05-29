@@ -1,5 +1,6 @@
 using Content.Shared.Hands.Components;
 using Content.Shared.LieDown;
+using Content.Shared.Movement.Systems;
 using Content.Shared.Physics;
 using Content.Shared.Rotation;
 using Robust.Shared.Audio;
@@ -15,6 +16,7 @@ namespace Content.Shared.Standing
         [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
         [Dependency] private readonly SharedAudioSystem _audio = default!;
         [Dependency] private readonly SharedPhysicsSystem _physics = default!;
+        [Dependency] private readonly MovementSpeedModifierSystem _movement = default!;
 
         // If StandingCollisionLayer value is ever changed to more than one layer, the logic needs to be edited.
         private const int StandingCollisionLayer = (int) CollisionGroup.MidImpassable;
@@ -81,6 +83,8 @@ namespace Content.Shared.Standing
             Dirty(standingState);
             RaiseLocalEvent(uid, new DownedEvent(), false);
 
+            _movement.RefreshMovementSpeedModifiers(uid);
+
             // Seemed like the best place to put it
             _appearance.SetData(uid, RotationVisuals.RotationState, RotationState.Horizontal, appearance);
 
@@ -137,6 +141,8 @@ namespace Content.Shared.Standing
             standingState.Standing = true;
             Dirty(standingState);
             RaiseLocalEvent(uid, new StoodEvent(), false);
+
+            _movement.RefreshMovementSpeedModifiers(uid);
 
             _appearance.SetData(uid, RotationVisuals.RotationState, RotationState.Vertical, appearance);
 
