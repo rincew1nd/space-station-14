@@ -19,19 +19,31 @@ namespace Content.Shared.LieDown
 
         public override void Initialize()
         {
-            SubscribeLocalEvent<LyingDownComponent, ComponentStartup>(OnComponentInit);
-            SubscribeLocalEvent<LyingDownComponent, StandUpActionEvent>(OnStandUpAction);
-            SubscribeLocalEvent<LyingDownComponent, LieDownActionEvent>(OnLieDownAction);
             SubscribeLocalEvent<LyingDownComponent, InteractHandEvent>(OnInteractHand);
             SubscribeLocalEvent<LyingDownComponent, GetVerbsEvent<AlternativeVerb>>(AddStandUpVerb);
             SubscribeLocalEvent<LyingDownComponent, ExaminedEvent>(OnExamined);
             SubscribeLocalEvent<LyingDownComponent, RefreshMovementSpeedModifiersEvent>(OnRefresh);
+
+            SubscribeLocalEvent<LyingDownComponent, ComponentStartup>(OnComponentStartup);
+            SubscribeLocalEvent<LyingDownComponent, ComponentShutdown>(OnComponentShutdown);
 
             // Bind keybinds to lie down action
             SubscribeNetworkEvent<ChangeStandingStateEvent>(OnChangeAction);
             CommandBinds.Builder
                 .Bind(ContentKeyFunctions.LieDownStandUp, InputCmdHandler.FromDelegate(ChangeLyingState))
                 .Register<SharedLieDownSystem>();
+        }
+
+        private void OnComponentShutdown(EntityUid uid, LyingDownComponent component, ComponentShutdown args)
+        {
+            SwitchActions(uid);
+            _movement.RefreshMovementSpeedModifiers(uid);
+        }
+
+        private void OnComponentStartup(EntityUid uid, LyingDownComponent component, ComponentStartup args)
+        {
+            SwitchActions(uid);
+            _movement.RefreshMovementSpeedModifiers(uid);
         }
 
         /// <summary>
@@ -51,21 +63,18 @@ namespace Content.Shared.LieDown
                 return;
 
             var uid = args.SenderSession.AttachedEntity.Value;
-            var component = EnsureComp<LyingDownComponent>(uid);
-
             if (_standing.IsDown(uid))
             {
-                TryStandUp(uid, component);
+                TryStandUp(uid);
             }
             else
             {
-                TryLieDown(uid, component);
+                TryLieDown(uid);
             }
         }
 
         /// <summary>
         ///     Update movement speed according to the lying state.
-        ///     TODO: Move it somewhere else. How could actions be added separately?
         /// </summary>
         private void OnRefresh(EntityUid uid, LyingDownComponent component, RefreshMovementSpeedModifiersEvent args)
         {
@@ -80,44 +89,21 @@ namespace Content.Shared.LieDown
         }
 
         /// <summary>
-        ///     When component is added to player, add an action.
-        /// </summary>
-        private void OnComponentInit(EntityUid uid, LyingDownComponent component, ComponentStartup args)
-        {
-            _actions.AddAction(uid, component.LieDownAction, uid);
-        }
-
-        /// <summary>
         ///     Change available to player actions.
         /// </summary>
-        private void SwitchActions(EntityUid uid, LyingDownComponent component)
+        private void SwitchActions(EntityUid uid)
         {
+            var standingComponent = Comp<StandingStateComponent>(uid);
             if (_standing.IsDown(uid))
             {
-                _actions.AddAction(uid, component.StandUpAction, null);
-                _actions.RemoveAction(uid, component.LieDownAction);
+                _actions.AddAction(uid, standingComponent.StandUpAction, null);
+                _actions.RemoveAction(uid, standingComponent.LieDownAction);
             }
             else
             {
-                _actions.AddAction(uid, component.LieDownAction, uid);
-                _actions.RemoveAction(uid, component.StandUpAction);
+                _actions.AddAction(uid, standingComponent.LieDownAction, uid);
+                _actions.RemoveAction(uid, standingComponent.StandUpAction);
             }
-        }
-
-        /// <summary>
-        ///     Event that being risen on stand up.
-        /// </summary>
-        private void OnStandUpAction(EntityUid uid, LyingDownComponent component, StandUpActionEvent args)
-        {
-            TryStandUp(uid, component);
-        }
-
-        /// <summary>
-        ///     Event that being risen on lie down.
-        /// </summary>
-        private void OnLieDownAction(EntityUid uid, LyingDownComponent component, LieDownActionEvent args)
-        {
-            TryLieDown(uid, component);
         }
 
         /// <summary>
@@ -125,7 +111,7 @@ namespace Content.Shared.LieDown
         /// </summary>
         private void OnInteractHand(EntityUid uid, LyingDownComponent component, InteractHandEvent args)
         {
-            TryStandUp(args.Target, component);
+            TryStandUp(args.Target);
         }
 
         /// <summary>
@@ -146,7 +132,7 @@ namespace Content.Shared.LieDown
             {
                 Act = () =>
                 {
-                    TryStandUp(uid, component);
+                    TryStandUp(uid);
                 },
                 Text = Loc.GetString(component.MakeToStandUpAction!),
                 Priority = 2
@@ -166,24 +152,24 @@ namespace Content.Shared.LieDown
             }
         }
 
-        private void TryStandUp(EntityUid uid, LyingDownComponent component)
+        public void TryStandUp(EntityUid uid)
         {
-            if (!_standing.Stand(uid))
+            if (!_standing.IsDown(uid) || !_standing.Stand(uid))
                 return;
 
             Logger.Debug("{uid} tried to stand up", uid);
 
-            SwitchActions(uid, component);
+            RemCompDeferred<LyingDownComponent>(uid);
         }
 
-        private void TryLieDown(EntityUid uid, LyingDownComponent component)
+        public void TryLieDown(EntityUid uid)
         {
-            if (!_standing.Down(uid, false, false))
+            if (_standing.IsDown(uid) || !_standing.Down(uid, false, false))
                 return;
 
             Logger.Debug("{uid} tried to lie down", uid);
 
-            SwitchActions(uid, component);
+            EnsureComp<LyingDownComponent>(uid);
         }
     }
 }

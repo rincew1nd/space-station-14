@@ -1,3 +1,4 @@
+using Content.Shared.Actions;
 using Content.Shared.Hands.Components;
 using Content.Shared.LieDown;
 using Content.Shared.Movement.Systems;
@@ -16,7 +17,8 @@ namespace Content.Shared.Standing
         [Dependency] private readonly SharedAppearanceSystem _appearance = default!;
         [Dependency] private readonly SharedAudioSystem _audio = default!;
         [Dependency] private readonly SharedPhysicsSystem _physics = default!;
-        [Dependency] private readonly MovementSpeedModifierSystem _movement = default!;
+        [Dependency] private readonly SharedActionsSystem _actions = default!;
+        [Dependency] private readonly SharedLieDownSystem _lieDown = default!;
 
         // If StandingCollisionLayer value is ever changed to more than one layer, the logic needs to be edited.
         private const int StandingCollisionLayer = (int) CollisionGroup.MidImpassable;
@@ -25,6 +27,10 @@ namespace Content.Shared.Standing
         {
             SubscribeLocalEvent<StandingStateComponent, ComponentGetState>(OnGetState);
             SubscribeLocalEvent<StandingStateComponent, ComponentHandleState>(OnHandleState);
+            SubscribeLocalEvent<StandingStateComponent, ComponentStartup>(OnComponentInit);
+
+            SubscribeLocalEvent<StandingStateComponent, LieDownActionEvent>(OnLieDownAction);
+            SubscribeLocalEvent<StandingStateComponent, StandUpActionEvent>(OnStandUpAction);
         }
 
         private void OnHandleState(EntityUid uid, StandingStateComponent component, ref ComponentHandleState args)
@@ -83,8 +89,6 @@ namespace Content.Shared.Standing
             Dirty(standingState);
             RaiseLocalEvent(uid, new DownedEvent(), false);
 
-            _movement.RefreshMovementSpeedModifiers(uid);
-
             // Seemed like the best place to put it
             _appearance.SetData(uid, RotationVisuals.RotationState, RotationState.Horizontal, appearance);
 
@@ -142,8 +146,6 @@ namespace Content.Shared.Standing
             Dirty(standingState);
             RaiseLocalEvent(uid, new StoodEvent(), false);
 
-            _movement.RefreshMovementSpeedModifiers(uid);
-
             _appearance.SetData(uid, RotationVisuals.RotationState, RotationState.Vertical, appearance);
 
             if (TryComp(uid, out FixturesComponent? fixtureComponent))
@@ -156,7 +158,35 @@ namespace Content.Shared.Standing
             }
             standingState.ChangedFixtures.Clear();
 
+            if (HasComp<LyingDownComponent>(uid))
+                RemComp<LyingDownComponent>(uid);
+
             return true;
+        }
+
+        /// <summary>
+        ///     When component is added to player, add an action.
+        /// </summary>
+        private void OnComponentInit(EntityUid uid, StandingStateComponent component, ComponentStartup args)
+        {
+            if (component.LieDownAction.Event != null)
+                _actions.AddAction(uid, component.LieDownAction, uid);
+        }
+
+        /// <summary>
+        ///     Event that being risen on lie down attempt.
+        /// </summary>
+        private void OnLieDownAction(EntityUid uid, StandingStateComponent component, LieDownActionEvent args)
+        {
+            _lieDown.TryLieDown(uid);
+        }
+
+        /// <summary>
+        ///     Event that being risen on stand up attempt.
+        /// </summary>
+        private void OnStandUpAction(EntityUid uid, StandingStateComponent component, StandUpActionEvent args)
+        {
+            _lieDown.TryStandUp(uid);
         }
 
         // I'm not calling it StandingStateComponentState
