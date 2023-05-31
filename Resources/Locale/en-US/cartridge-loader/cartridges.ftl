@@ -1,5 +1,6 @@
 ﻿default-program-name = Program
 notekeeper-program-name = Notekeeper
+messenger-program-name = Messenger
 
 net-probe-program-name = NetProbe
 net-probe-scan = Scanned {$device}!

@@ -67,6 +67,7 @@
   - type: DeviceNetwork
     deviceNetId: Wireless
     receiveFrequencyId: PDA
+    transmitFrequencyId: PDA
     prefix: device-address-prefix-console
   - type: WirelessNetworkConnection
     range: 500
@@ -74,6 +75,7 @@
     uiKey: enum.PDAUiKey.Key
     preinstalled:
       - NotekeeperCartridge
+      - MessengerCartridge
     cartridgeSlot:
       priority: -1
       name: Cartridge
@@ -474,7 +476,7 @@
     scanDelay: 1.2
     scanningEndSound:
       path: "/Audio/Items/Medical/healthscanner.ogg"
-      
+
 - type: entity
   parent: BasePDA
   id: ParamedicPDA
@@ -493,7 +495,7 @@
     scanDelay: 0.5
     scanningEndSound:
       path: "/Audio/Items/Medical/healthscanner.ogg"
-      
+
 - type: entity
   parent: BasePDA
   id: ChemistryPDA

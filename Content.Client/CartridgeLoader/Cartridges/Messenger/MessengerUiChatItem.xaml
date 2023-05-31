@@ -1,0 +1,19 @@
+<messenger:MessengerUiChatItem xmlns:messenger="clr-namespace:Content.Client.CartridgeLoader.Cartridges.Messenger"
+                               xmlns="https://spacestation14.io" Margin="1 0 2 0">
+    <PanelContainer StyleClasses="BackgroundDark"></PanelContainer>
+    <BoxContainer Orientation="Vertical" HorizontalExpand="True" VerticalExpand="True">
+       <BoxContainer HorizontalExpand="True">
+           <Label Name="ChatName" Access="Public" Text="" HorizontalExpand="True"/>
+           <Label Name="LastMessage" Access="Public" Text="" HorizontalExpand="True"/>
+           <Button
+               Name="OpenChatHistoryButton"
+               Access="Public"
+               HorizontalExpand="True"
+               Text="Open chat"
+               TextAlign="Right"
+               Mode="Press"
+               SizeFlagsStretchRatio="1">
+           </Button>
+       </BoxContainer>
+    </BoxContainer>
+</messenger:MessengerUiChatItem>
