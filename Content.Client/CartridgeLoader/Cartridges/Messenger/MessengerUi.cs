@@ -1,6 +1,6 @@
 using Content.Client.UserInterface.Fragments;
 using Content.Shared.CartridgeLoader;
-using Content.Shared.CartridgeLoader.Cartridges;
+using Content.Shared.CartridgeLoader.Cartridges.Messenger;
 using Robust.Client.GameObjects;
 using Robust.Client.UserInterface;
 
@@ -8,8 +8,8 @@ namespace Content.Client.CartridgeLoader.Cartridges.Messenger;
 
 public sealed class MessengerUi : UIFragment
 {
-    public const int ChatsList = 0;
-    public const int ChatHistory = 1;
+    private const int ChatsList = 0;
+    private const int ChatHistory = 1;
 
     private int _currentView;
 
@@ -56,8 +56,6 @@ public sealed class MessengerUi : UIFragment
                 break;
             }
         };
-
-
     }
 
     public override void UpdateState(BoundUserInterfaceState state)

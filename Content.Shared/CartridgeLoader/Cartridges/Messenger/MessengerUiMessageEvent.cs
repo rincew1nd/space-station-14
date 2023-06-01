@@ -1,6 +1,6 @@
 using Robust.Shared.Serialization;
 
-namespace Content.Shared.CartridgeLoader.Cartridges;
+namespace Content.Shared.CartridgeLoader.Cartridges.Messenger;
 
 [Serializable, NetSerializable]
 public sealed class MessengerSendUiMessageEvent : CartridgeMessageEvent
@@ -27,10 +27,4 @@ public sealed class MessengerOpenHistoryUiMessageEvent : CartridgeMessageEvent
 }
 
 [Serializable, NetSerializable]
-public sealed class MessengerChatsListUiMessageEvent : CartridgeMessageEvent
-{
-    public MessengerChatsListUiMessageEvent()
-    {
-
-    }
-}
+public sealed class MessengerChatsListUiMessageEvent : CartridgeMessageEvent { }

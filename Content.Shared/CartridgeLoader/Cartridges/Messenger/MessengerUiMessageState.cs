@@ -1,13 +1,13 @@
 using Robust.Shared.Serialization;
 
-namespace Content.Shared.CartridgeLoader.Cartridges;
+namespace Content.Shared.CartridgeLoader.Cartridges.Messenger;
 
 [Serializable, NetSerializable]
 public sealed class MessengerMainMenuUiState : BoundUserInterfaceState
 {
-    public Dictionary<EntityUid, MessengerMessage> LastMessage;
+    public Dictionary<EntityUid, MessengerMessage?> LastMessage;
 
-    public MessengerMainMenuUiState(Dictionary<EntityUid, MessengerMessage> lastMessage)
+    public MessengerMainMenuUiState(Dictionary<EntityUid, MessengerMessage?> lastMessage)
     {
         LastMessage = lastMessage;
     }
@@ -29,14 +29,15 @@ public sealed class MessengerHistoryUiState : BoundUserInterfaceState
 [Serializable, NetSerializable, DataRecord]
 public sealed class MessengerMessage
 {
-    public string? Name;
-    public readonly TimeSpan Time;
-    public readonly string Text;
+    public string Name = "Unknown";
+    public readonly TimeSpan? SentTime;
+    public readonly bool? IsIncoming;
+    public readonly string? Text;
 
-    public MessengerMessage(TimeSpan time, string text)
+    public MessengerMessage(TimeSpan? sentTime, bool? isIncoming, string? text)
     {
-        Name = "unknown";
-        Time = time;
+        SentTime = sentTime;
+        IsIncoming = isIncoming;
         Text = text;
     }
 }
@@ -44,22 +45,16 @@ public sealed class MessengerMessage
 [Serializable, NetSerializable, DataRecord]
 public sealed class MessengerHistoryMessage
 {
-    public readonly EntityUid From;
-    public readonly EntityUid To;
     public readonly string? ToName;
-    public readonly TimeSpan Time;
+    public readonly TimeSpan SentTime;
+    public readonly bool IsIncoming;
     public readonly string Text;
 
-    public MessengerHistoryMessage(EntityUid from, EntityUid to, string? toName, TimeSpan time, string text)
+    public MessengerHistoryMessage(string? toName, TimeSpan sentTime, bool isIncoming, string text)
     {
-        From = from;
-        To = to;
-        ToName = toName;
-        if (string.IsNullOrEmpty(ToName))
-        {
-            ToName = "unknown";
-        }
-        Time = time;
+        ToName = toName ?? "Unknown";
+        SentTime = sentTime;
+        IsIncoming = isIncoming;
         Text = text;
     }
 }

@@ -69,6 +69,10 @@ namespace Content.Server.PDA
         public void SetOwner(EntityUid uid, PDAComponent pda, string ownerName)
         {
             pda.OwnerName = ownerName;
+            if (pda.ContainedID != null)
+                pda.ContainedID.FullName = ownerName;
+
+            RaiseLocalEvent(uid, new PdaIdCardChangedEvent(true));
             UpdatePdaUi(uid, pda);
         }
 

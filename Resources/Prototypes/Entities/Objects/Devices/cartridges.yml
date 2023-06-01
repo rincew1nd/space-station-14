@@ -45,8 +45,8 @@
 - type: entity
   parent: BaseItem
   id: MessengerCartridge
-  name: messenger cartridge
-  description: A station messenger program
+  name: messenger-program-name
+  description: messenger-program-description
   components:
     - type: Sprite
       sprite: Objects/Devices/cartridge.rsi
@@ -63,5 +63,3 @@
         sprite:  Objects/Misc/books.rsi
         state: book6
     - type: MessengerCartridge
-
-
