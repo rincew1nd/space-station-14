@@ -26,6 +26,7 @@ public sealed partial class TTSSystem : EntitySystem
     private const int MaxMessageChars = 100 * 2; // same as SingleBubbleCharLimit * 2
     private bool _isEnabled = false;
     private string _voiceId = "Announcer";
+    public const int WhisperVoiceRange = 6; // how far whisper goes in world units
 
     public override void Initialize()
     {
@@ -91,7 +92,7 @@ public sealed partial class TTSSystem : EntitySystem
         var soundData = await GenerateTTS(ev.Text, protoVoice.Speaker);
         if (soundData is null) return;
 
-        RaiseNetworkEvent(new PlayTTSEvent(ev.Uid, soundData), Filter.SinglePlayer(session));
+        RaiseNetworkEvent(new PlayTTSEvent(ev.Uid, soundData, false), Filter.SinglePlayer(session));
     }
 
     private async void OnEntitySpoke(EntityUid uid, TTSComponent component, EntitySpokeEvent args)
@@ -121,19 +122,14 @@ public sealed partial class TTSSystem : EntitySystem
     {
         var soundData = await GenerateTTS(message, speaker);
         if (soundData is null) return;
-        RaiseNetworkEvent(new PlayTTSEvent(uid, soundData), Filter.Pvs(uid));
+        RaiseNetworkEvent(new PlayTTSEvent(uid, soundData, false), Filter.Pvs(uid));
     }
 
     private async void HandleWhisper(EntityUid uid, string message, string obfMessage, string speaker)
     {
-        var fullSoundData = await GenerateTTS(message, speaker, true);
-        if (fullSoundData is null) return;
-
-        var obfSoundData = await GenerateTTS(obfMessage, speaker, true);
-        if (obfSoundData is null) return;
-
-        var fullTtsEvent = new PlayTTSEvent(uid, fullSoundData, true);
-        var obfTtsEvent = new PlayTTSEvent(uid, obfSoundData, true);
+        var soundData = await GenerateTTS(message, speaker, true);
+        if (soundData is null)
+            return;
 
         // TODO: Check obstacles
         var xformQuery = GetEntityQuery<TransformComponent>();
@@ -141,16 +137,19 @@ public sealed partial class TTSSystem : EntitySystem
         var receptions = Filter.Pvs(uid).Recipients;
         foreach (var session in receptions)
         {
-            if (!session.AttachedEntity.HasValue) continue;
-            var xform = xformQuery.GetComponent(session.AttachedEntity.Value);
-            var distance = (sourcePos - _xforms.GetWorldPosition(xform, xformQuery)).LengthSquared;
-            if (distance > ChatSystem.VoiceRange * ChatSystem.VoiceRange)
+            if (!session.AttachedEntity.HasValue)
                 continue;
 
-            RaiseNetworkEvent(distance > ChatSystem.WhisperRange ? obfTtsEvent : fullTtsEvent, session);
+            var xform = xformQuery.GetComponent(session.AttachedEntity.Value);
+            var distance = (sourcePos - _xforms.GetWorldPosition(xform, xformQuery)).LengthSquared;
+
+            if (distance > WhisperVoiceRange)
+                continue;
+
+            var ttsEvent = new PlayTTSEvent(uid, soundData, false, 0.5f - distance / WhisperVoiceRange);
+            RaiseNetworkEvent(ttsEvent, session);
         }
     }
-
 
     private async void HandleRadio(EntityUid uid, string message, string speaker)
     {
@@ -158,23 +157,35 @@ public sealed partial class TTSSystem : EntitySystem
         if (soundData is null)
             return;
         if (TryComp(uid, out ActorComponent? actor))
-            RaiseNetworkEvent(new PlayTTSEvent(uid, soundData), Filter.SinglePlayer(actor.PlayerSession));
+            RaiseNetworkEvent(new PlayTTSEvent(uid, soundData, true), Filter.SinglePlayer(actor.PlayerSession));
     }
 
     // ReSharper disable once InconsistentNaming
     private async Task<byte[]?> GenerateTTS(string text, string speaker, bool isWhisper = false, bool isRadio = false)
     {
-        var textSanitized = Sanitize(text);
-        if (textSanitized == "") return null;
-        if (char.IsLetter(textSanitized[^1]))
-            textSanitized += ".";
+        try
+        {
+            var textSanitized = Sanitize(text);
+            if (textSanitized == "") return null;
+            if (char.IsLetter(textSanitized[^1]))
+                textSanitized += ".";
 
-        var ssmlTraits = SoundTraits.RateFast;
-        if (isWhisper)
-            ssmlTraits |= SoundTraits.PitchVerylow;
-        var textSsml = ToSsmlText(textSanitized, ssmlTraits);
+            var ssmlTraits = SoundTraits.RateFast;
+            if (isWhisper)
+                ssmlTraits |= SoundTraits.PitchVerylow;
+            var textSsml = ToSsmlText(textSanitized, ssmlTraits);
 
-        return isRadio ? await _ttsManager.ConvertTextToSpeechRadio(speaker, textSsml) : await _ttsManager.ConvertTextToSpeech(speaker, textSsml);
+            return isRadio
+                ? await _ttsManager.ConvertTextToSpeechRadio(speaker, textSsml)
+                : await _ttsManager.ConvertTextToSpeech(speaker, textSsml);
+        }
+        catch (Exception e)
+        {
+            // Catch TTS exceptions to prevent a server crash.
+            Logger.Error($"TTS System error: {e.Message}");
+        }
+
+        return null;
     }
 }
 
