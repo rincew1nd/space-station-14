@@ -26,6 +26,7 @@ public sealed partial class TTSSystem : EntitySystem
     private const int MaxMessageChars = 100 * 2; // same as SingleBubbleCharLimit * 2
     private bool _isEnabled = false;
     private string _voiceId = "Announcer";
+    public const float WhisperVoiceVolumeModifier = 0.6f; // how far whisper goes in world units
     public const int WhisperVoiceRange = 6; // how far whisper goes in world units
 
     public override void Initialize()
@@ -146,7 +147,11 @@ public sealed partial class TTSSystem : EntitySystem
             if (distance > WhisperVoiceRange)
                 continue;
 
-            var ttsEvent = new PlayTTSEvent(uid, soundData, false, 0.5f - distance / WhisperVoiceRange);
+            var ttsEvent = new PlayTTSEvent(
+                uid,
+                soundData,
+                false,
+                WhisperVoiceVolumeModifier * (1f - distance / WhisperVoiceRange));
             RaiseNetworkEvent(ttsEvent, session);
         }
     }
