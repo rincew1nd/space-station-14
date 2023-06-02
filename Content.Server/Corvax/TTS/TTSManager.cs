@@ -14,7 +14,6 @@ using FFMpegCore.Arguments;
 using FFMpegCore.Pipes;
 using Prometheus;
 using Robust.Shared.Configuration;
-using System.Collections;
 using System.ComponentModel;
 
 namespace Content.Server.Corvax.TTS;
@@ -57,7 +56,7 @@ public sealed class TTSManager
     private readonly ConcurrentDictionary<string, byte[]> _cacheRadio = new();
     private readonly HashSet<string> _cacheRadioKeysSeq = new();
 
-    private readonly object _lockObject = new object();
+    private static readonly ConcurrentDictionary<string, SemaphoreSlim> Locks = new();
     private double _timeout = 1;
 
     private int _maxCachedCount = 200;
@@ -100,7 +99,7 @@ public sealed class TTSManager
         WantedCount.Inc();
         var cacheKey = GenerateCacheKey(speaker, text);
 
-        if (Monitor.TryEnter(_lockObject, TimeSpan.FromSeconds(_timeout)))
+        return await ExecuteWithNamedLockAsync(cacheKey, async () =>
         {
             if (_cache.TryGetValue(cacheKey, out var data))
             {
@@ -126,7 +125,8 @@ public sealed class TTSManager
                     throw new Exception($"TTS request returned bad status code: {response.StatusCode}");
                 }
 
-                var json = await response.Content.ReadFromJsonAsync<GenerateVoiceResponse>(cancellationToken: cts.Token);
+                var json =
+                    await response.Content.ReadFromJsonAsync<GenerateVoiceResponse>(cancellationToken: cts.Token);
                 var soundData = Convert.FromBase64String(json.Results.First().Audio);
 
                 _cache.AddOrUpdate(cacheKey, soundData, (_, __) => soundData);
@@ -138,7 +138,8 @@ public sealed class TTSManager
                     _cacheKeysSeq.Remove(firstKey);
                 }
 
-                _sawmill.Debug($"Generated new sound for '{text}' speech by '{speaker}' speaker ({soundData.Length} bytes)");
+                _sawmill.Debug(
+                    $"Generated new sound for '{text}' speech by '{speaker}' speaker ({soundData.Length} bytes)");
                 RequestTimings.WithLabels("Success").Observe((DateTime.UtcNow - reqTime).TotalSeconds);
 
                 return soundData;
@@ -152,13 +153,11 @@ public sealed class TTSManager
             catch (Exception e)
             {
                 RequestTimings.WithLabels("Error").Observe((DateTime.UtcNow - reqTime).TotalSeconds);
-                _sawmill.Error($"Failed of request generation new sound for '{text}' speech by '{speaker}' speaker\n{e}");
+                _sawmill.Error(
+                    $"Failed of request generation new sound for '{text}' speech by '{speaker}' speaker\n{e}");
                 throw new Exception("TTS request failed");
             }
-        }
-
-        _sawmill.Error("Failed to acquire lock in {Timeout} seconds", _timeout);
-        throw new Exception($"Failed to acquire lock in {_timeout} seconds");
+        });
     }
 
     public async Task<byte[]> ConvertTextToSpeechRadio(string speaker, string text)
@@ -251,6 +250,21 @@ public sealed class TTSManager
         var sha256 = System.Security.Cryptography.SHA256.Create();
         var bytes = sha256.ComputeHash(keyData);
         return Convert.ToHexString(bytes);
+    }
+
+    private async Task<TResult> ExecuteWithNamedLockAsync<TResult>(string key, Func<Task<TResult>> function)
+    {
+        var semaphore = Locks.GetOrAdd(key, new SemaphoreSlim(1, 1));
+        await semaphore.WaitAsync();
+        try
+        {
+            return await function();
+        }
+        finally
+        {
+            semaphore.Release();
+            Locks.TryRemove(key, out semaphore);
+        }
     }
 
     private sealed class CrusherFilterArgument : IAudioFilterArgument
