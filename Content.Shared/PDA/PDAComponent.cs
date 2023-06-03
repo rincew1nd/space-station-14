@@ -38,4 +38,24 @@ namespace Content.Shared.PDA
         [ViewVariables] public string? StationAlertLevel;
         [ViewVariables] public Color StationAlertColor = Color.White;
     }
+
+    /// <summary>
+    ///     State of IdCard in PDA was changed.
+    /// </summary>
+    public sealed class PdaIdCardChangedEvent : EntityEventArgs
+    {
+        /// <summary>
+        ///     Is IdCard inserted into PDA?
+        /// </summary>
+        public bool IsIdCardInserted { get; }
+
+        /// <summary>
+        ///     .ctor
+        /// </summary>
+        /// <param name="isIdCardInserted"></param>
+        public PdaIdCardChangedEvent(bool isIdCardInserted)
+        {
+            IsIdCardInserted = isIdCardInserted;
+        }
+    }
 }

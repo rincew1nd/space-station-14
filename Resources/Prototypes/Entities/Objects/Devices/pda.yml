@@ -74,6 +74,7 @@
     uiKey: enum.PDAUiKey.Key
     preinstalled:
       - NotekeeperCartridge
+      - MessengerCartridge
     cartridgeSlot:
       priority: -1
       name: Cartridge

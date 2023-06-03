@@ -1,0 +1,12 @@
+﻿<cartridges:MessengerCartridgeUiFragment xmlns:cartridges="clr-namespace:Content.Client.MessengerCartridge"
+                                         xmlns="https://spacestation14.io" Margin="1 0 2 0">
+    <PanelContainer StyleClasses="BackgroundDark"></PanelContainer>
+    <BoxContainer Orientation="Vertical" HorizontalExpand="True" VerticalExpand="True">
+        <Button Visible="False" Name="BackButton" Text="Back"/>
+        <ScrollContainer HorizontalExpand="True" VerticalExpand="True" HScrollEnabled="True">
+            <BoxContainer Orientation="Vertical" Name="ChatsContainer" HorizontalExpand="True" VerticalExpand="True"/>
+        </ScrollContainer>
+        <LineEdit Name="MessageInput" Visible="False" HorizontalExpand="True" SetHeight="32"/>
+        <Button Name="SendButton" Visible="False" Text="Send"/>
+    </BoxContainer>
+</cartridges:MessengerCartridgeUiFragment>

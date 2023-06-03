@@ -21,6 +21,7 @@
     - BaseStationExpeditions
     - BaseStationAllEventsEligible
     - BaseStationNanotrasen
+    - BaseStationMessageHistory
   noSpawn: true
   components:
     - type: Transform

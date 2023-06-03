@@ -40,7 +40,10 @@ namespace Content.Shared.PDA
         protected virtual void OnItemInserted(EntityUid uid, PDAComponent pda, EntInsertedIntoContainerMessage args)
         {
             if (args.Container.ID == PDAComponent.PDAIdSlotId)
+            {
                 pda.ContainedID = CompOrNull<IdCardComponent>(args.Entity);
+                RaiseLocalEvent(uid, new PdaIdCardChangedEvent(true));
+            }
 
             UpdatePdaAppearance(uid, pda);
         }
@@ -48,7 +51,10 @@ namespace Content.Shared.PDA
         protected virtual void OnItemRemoved(EntityUid uid, PDAComponent pda, EntRemovedFromContainerMessage args)
         {
             if (args.Container.ID == pda.IdSlot.ID)
+            {
                 pda.ContainedID = null;
+                RaiseLocalEvent(uid, new PdaIdCardChangedEvent(false));
+            }
 
             UpdatePdaAppearance(uid, pda);
         }
