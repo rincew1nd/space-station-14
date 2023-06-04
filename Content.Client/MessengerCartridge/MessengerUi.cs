@@ -28,7 +28,9 @@ public sealed class MessengerUi : UIFragment
         _fragment.OnHistoryViewPressed += from =>
             SendMessengerUpdateEvent(MessengerCartridgeUiEventType.GetChatHistory, from);
         _fragment.OnMessageSendButtonPressed += (to, text) =>
-            SendMessengerUpdateEvent(MessengerCartridgeUiEventType.GetChatHistory, (to, text));
+            SendMessengerUpdateEvent(
+                MessengerCartridgeUiEventType.SendMessage,
+                new MessengerCartridgeUiEventNewMessage(to, text));
     }
 
     private void SendMessengerUpdateEvent(MessengerCartridgeUiEventType type, object? args = null)

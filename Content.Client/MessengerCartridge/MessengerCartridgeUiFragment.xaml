@@ -1,23 +1,21 @@
 ﻿<cartridges:MessengerCartridgeUiFragment xmlns:cartridges="clr-namespace:Content.Client.MessengerCartridge"
                                          xmlns="https://spacestation14.io" Margin="1 0 2 0">
     <PanelContainer StyleClasses="BackgroundDark"></PanelContainer>
-    <BoxContainer Orientation="Vertical" HorizontalExpand="True" VerticalExpand="True">
-        <BoxContainer Name="ContactWindow" Visible="True">
-            <BoxContainer Orientation="Horizontal">
-                <Label Name="OnlineStatus" Align="Left"/>
-                <Button Name="ChangeOnlineStatusButton" HorizontalAlignment="Right"/>
-            </BoxContainer>
-            <ScrollContainer HorizontalExpand="True" VerticalExpand="True" HScrollEnabled="True">
-                <BoxContainer Orientation="Vertical" Name="ContactList" HorizontalExpand="True" VerticalExpand="True"/>
-            </ScrollContainer>
+    <BoxContainer Name="ContactWindow" Orientation="Vertical" HorizontalExpand="True" VerticalExpand="True" Visible="False">
+        <BoxContainer HorizontalExpand="True" Orientation="Horizontal">
+            <Label Name="OnlineStatus" Align="Left"/>
+            <Button Name="ChangeOnlineStatusButton" HorizontalAlignment="Right"/>
         </BoxContainer>
-        <BoxContainer Name="ChatHistoryWindow" Visible="False">
-            <Button Name="BackButton" Text="Back"/>
-            <ScrollContainer HorizontalExpand="True" VerticalExpand="True" HScrollEnabled="True">
-                <BoxContainer Orientation="Vertical" Name="ChatHistory" HorizontalExpand="True" VerticalExpand="True"/>
-            </ScrollContainer>
-            <LineEdit Name="MessageInput"  HorizontalExpand="True" SetHeight="32"/>
-            <Button Name="SendButton" Text="Send"/>
-        </BoxContainer>
+        <ScrollContainer HorizontalExpand="True" VerticalExpand="True" HScrollEnabled="True">
+            <BoxContainer Orientation="Vertical" Name="ContactList" HorizontalExpand="True" VerticalExpand="True"/>
+        </ScrollContainer>
+    </BoxContainer>
+    <BoxContainer Name="ChatHistoryWindow" Orientation="Vertical" HorizontalExpand="True" VerticalExpand="True" Visible="False">
+        <Button Name="BackButton" Text="Back"/>
+        <ScrollContainer HorizontalExpand="True" VerticalExpand="True" HScrollEnabled="True">
+            <BoxContainer Orientation="Vertical" Name="ChatHistory" HorizontalExpand="True" VerticalExpand="True"/>
+        </ScrollContainer>
+        <LineEdit Name="MessageInput"  HorizontalExpand="True" SetHeight="32"/>
+        <Button Name="SendButton" Text="Send"/>
     </BoxContainer>
 </cartridges:MessengerCartridgeUiFragment>

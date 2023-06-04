@@ -17,7 +17,7 @@ public sealed partial class MessengerCartridgeUiFragment : BoxContainer
     /// <summary>
     ///     Send message to other messenger cartridge.
     /// </summary>
-    public event Action<EntityUid?, string>? OnMessageSendButtonPressed;
+    public event Action<EntityUid, string>? OnMessageSendButtonPressed;
 
     /// <summary>
     ///     Get the chat history from MessengerServerSystem.
@@ -44,7 +44,13 @@ public sealed partial class MessengerCartridgeUiFragment : BoxContainer
 
         SendButton.OnPressed += _ =>
         {
-            OnMessageSendButtonPressed?.Invoke(CurrentChat?.IdCardUid, MessageInput.Text);
+            OnMessageSendButtonPressed?.Invoke(CurrentChat!.IdCardUid, MessageInput.Text);
+
+            var messageItem = new Label();
+            messageItem.Text = $"You : {MessageInput.Text}";
+            messageItem.Align = Label.AlignMode.Right;
+            ChatHistory.AddChild(messageItem);
+
             MessageInput.Clear();
         };
         BackButton.OnPressed += _ => OnBackButtonPressed?.Invoke();
@@ -72,8 +78,8 @@ public sealed partial class MessengerCartridgeUiFragment : BoxContainer
         if (state.IsOnline.HasValue)
         {
             var localizationOnlineStateString = $"messenger-program-{(state.IsOnline.Value ? "online" : "offline")}";
-            OnlineStatus.Text = localizationOnlineStateString;
-            ChangeOnlineStatusButton.Text = $"{localizationOnlineStateString}-button";
+            OnlineStatus.Text = Loc.GetString(localizationOnlineStateString);
+            ChangeOnlineStatusButton.Text = Loc.GetString($"{localizationOnlineStateString}-button");
         }
     }
 
@@ -94,7 +100,6 @@ public sealed partial class MessengerCartridgeUiFragment : BoxContainer
             {
                 OnHistoryViewPressed?.Invoke(chat.IdCardUid);
             };
-
             ContactList.AddChild(chatItem);
         }
     }

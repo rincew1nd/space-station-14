@@ -100,6 +100,7 @@ public sealed class MessengerCartridgeSystem : SharedMessengerCartridgeSystem
         var chats = _messageServerSystem.GetChats(component);
         return new MessengerCartridgeUiState()
         {
+            UpdateEventType = MessengerCartridgeUiEventType.GetChatContacts,
             Chats = chats.ToList(),
             IsOnline = component.IsOnline
         };
@@ -116,7 +117,9 @@ public sealed class MessengerCartridgeSystem : SharedMessengerCartridgeSystem
         var history = _messageServerSystem.GetChatHistory(component, idUid);
         return new MessengerCartridgeUiState()
         {
-            Messages = history.ToList()
+            UpdateEventType = MessengerCartridgeUiEventType.GetChatHistory,
+            CurrentOpenChat = history.Item1,
+            Messages = history.Item2.ToList()
         };
     }
 
@@ -125,10 +128,10 @@ public sealed class MessengerCartridgeSystem : SharedMessengerCartridgeSystem
     /// </summary>
     private MessengerCartridgeUiState? SendMessage(MessengerCartridgeComponent component, object? messageArgs)
     {
-        if (messageArgs is not (EntityUid idUid, string message))
+        if (messageArgs is not MessengerCartridgeUiEventNewMessage message)
             return new MessengerCartridgeUiState() { UpdateEventType = MessengerCartridgeUiEventType.Unknown };
 
-        var isSuccessful = _messageServerSystem.SendMessage(component, idUid, message);
+        var isSuccessful = _messageServerSystem.SendMessage(component, message.IdUid, message.Text);
         return isSuccessful
             ? null
             : new MessengerCartridgeUiState()
@@ -143,7 +146,12 @@ public sealed class MessengerCartridgeSystem : SharedMessengerCartridgeSystem
     /// </summary>
     private MessengerCartridgeUiState SetOnlineStatus(MessengerCartridgeComponent component)
     {
-        return new MessengerCartridgeUiState { IsOnline = !component.IsOnline };
+        component.IsOnline = !component.IsOnline;
+        return new MessengerCartridgeUiState
+        {
+            UpdateEventType = MessengerCartridgeUiEventType.ChangeOnlineState,
+            IsOnline = !component.IsOnline
+        };
     }
 
     #endregion

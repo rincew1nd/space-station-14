@@ -30,6 +30,32 @@ public sealed class MessengerCartridgeUiEvent : CartridgeMessageEvent
 }
 
 /// <summary>
+///     Message cartridge UI events.
+/// </summary>
+[Serializable, NetSerializable]
+public sealed class MessengerCartridgeUiEventNewMessage
+{
+    /// <summary>
+    ///     Receiver Uid.
+    /// </summary>
+    public readonly EntityUid IdUid;
+
+    /// <summary>
+    ///     Message text.
+    /// </summary>
+    public readonly string Text;
+
+    /// <summary>
+    ///     .ctor
+    /// </summary>
+    public MessengerCartridgeUiEventNewMessage(EntityUid idUid, string text)
+    {
+        IdUid = idUid;
+        Text = text;
+    }
+}
+
+/// <summary>
 ///     Message cartridge UI event types.
 /// </summary>
 [Serializable, NetSerializable]

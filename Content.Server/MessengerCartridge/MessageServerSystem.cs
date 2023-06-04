@@ -59,7 +59,7 @@ public sealed class MessageServerSystem : EntitySystem
             cartridgeLoader?.Owner,
             fullName);
 
-        UpdateCache(oldIdCard, fullName, station.Value, args.IsIdCardInserted);
+        UpdateCache(oldIdCard, cartridgeLoader!.Owner, fullName, station.Value, args.IsIdCardInserted);
 
         if (messengerCartridge.CurrentOwner != null)
             Log.Debug("Contact is '{Name}'", messengerCartridge.CurrentOwner?.FullName);
@@ -69,7 +69,7 @@ public sealed class MessageServerSystem : EntitySystem
     /// <summary>
     ///     Update MessengerContact cache.
     /// </summary>
-    private void UpdateCache(EntityUid idUid, string? fullName, EntityUid stationUid, bool isOnline)
+    private void UpdateCache(EntityUid idUid, EntityUid cartridgeLoaderUid, string? fullName, EntityUid stationUid, bool isOnline)
     {
         if (idUid == EntityUid.Invalid)
             return;
@@ -84,7 +84,7 @@ public sealed class MessageServerSystem : EntitySystem
             _messengerContactCache.TryAdd(
                 idUid,
                 new MessengerContactCacheRecord(
-                    new MessengerContact(idUid, fullName ?? ""))
+                    new MessengerContact(idUid, cartridgeLoaderUid, fullName ?? ""))
                     {
                         Station = stationUid,
                         IsOnline = isOnline
@@ -126,7 +126,7 @@ public sealed class MessageServerSystem : EntitySystem
 
         var oldContacts =
             stationMessageHistory.History.GetExistingChats(component.StationUid, component.CurrentOwner.IdCardUid)
-                .Select(m => new MessengerContact(m.idCardUid, m.fullName));
+                .Select(m => new MessengerContact(m.idCardUid, m.cartridgeLoader, m.fullName));
 
         var activeContacts = _messengerContactCache
             .Values
@@ -144,18 +144,18 @@ public sealed class MessageServerSystem : EntitySystem
     /// </summary>
     /// <param name="component"><see cref="MessengerCartridgeComponent"/></param>
     /// <param name="messengerContact"><see cref="EntityUid"/> for a chat history</param>
-    public IEnumerable<MessengerContactMessage> GetChatHistory(MessengerCartridgeComponent component, EntityUid messengerContact)
+    public (MessengerContact?, IEnumerable<MessengerContactMessage>) GetChatHistory(MessengerCartridgeComponent component, EntityUid messengerContact)
     {
         if (component.CurrentOwner == null || messengerContact == component.CurrentOwner.IdCardUid)
-            return Array.Empty<MessengerContactMessage>();
+            return (null, Array.Empty<MessengerContactMessage>());
 
         var station = _stationSystem.GetOwningStation(component.StationUid);
 
         if (station == null || !TryComp<StationMessageHistoryComponent>(station, out var stationMessageHistory))
-            return Array.Empty<MessengerContactMessage>();
+            return (null, Array.Empty<MessengerContactMessage>());
 
         var key = MessengerContactMessage.GetHashCode(component.CurrentOwner.IdCardUid, messengerContact);
-        return stationMessageHistory.History.GetRecords(station.Value, key).ToArray();
+        return (_messengerContactCache[messengerContact].Contact, stationMessageHistory.History.GetRecords(station.Value, key).ToArray());
     }
 
     /// <summary>
@@ -166,7 +166,7 @@ public sealed class MessageServerSystem : EntitySystem
     /// <param name="message">Message</param>
     public bool SendMessage(MessengerCartridgeComponent component, EntityUid idUid, string message)
     {
-        if (component.CurrentOwner != null)
+        if (component.CurrentOwner == null)
             return false;
 
         var receiverComponent = EntityQuery<MessengerCartridgeComponent>()
@@ -175,10 +175,26 @@ public sealed class MessageServerSystem : EntitySystem
                                   && mc.StationUid == component.StationUid
                                   && mc.IsOnline);
 
-        if (receiverComponent == null)
+        if (receiverComponent?.CurrentOwner == null)
             return false;
 
-        _messengerCartridgeSystem.NewMessageAlert(receiverComponent, component.CurrentOwner!.FullName);
+        var station = _stationSystem.GetOwningStation(component.StationUid);
+
+        if (station == null || !TryComp<StationMessageHistoryComponent>(station, out var stationMessageHistory))
+            return false;
+
+        stationMessageHistory.History.AddRecord(
+            station.Value,
+            new MessengerContactMessage(
+                TimeSpan.Zero,
+                component.CurrentOwner.IdCardUid,
+                receiverComponent.CurrentOwner.IdCardUid,
+                message),
+            component.CurrentOwner.FullName,
+            component.CurrentOwner.CartridgeLoaderUid,
+            receiverComponent.CurrentOwner.FullName,
+            receiverComponent.CurrentOwner.CartridgeLoaderUid);
+        _messengerCartridgeSystem.NewMessageAlert(receiverComponent, component.CurrentOwner.FullName);
         return true;
     }
 

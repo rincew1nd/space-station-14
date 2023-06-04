@@ -16,7 +16,7 @@ public sealed class StationsMessageHistory
     /// <summary>
     ///     Existing dialogs for each station.
     /// </summary>
-    private readonly ConcurrentDictionary<EntityUid, ConcurrentDictionary<EntityUid, List<(EntityUid, string)>>> _stationExistingChats = new();
+    private readonly ConcurrentDictionary<EntityUid, ConcurrentDictionary<EntityUid, List<(EntityUid, EntityUid, string)>>> _stationExistingChats = new();
 
     /// <summary>
     ///     Add a new station for a message history.
@@ -24,11 +24,11 @@ public sealed class StationsMessageHistory
     /// <param name="stationUid">Station that we're adding the record for.</param>
     public bool AddStation(EntityUid stationUid)
     {
-        if (TryAddEmpty(_stationMessages, stationUid))
+        if (!TryAddEmpty(_stationMessages, stationUid))
         {
             return false; // Highly unluckily
         }
-        if (TryAddEmpty(_stationExistingChats, stationUid))
+        if (!TryAddEmpty(_stationExistingChats, stationUid))
         {
             return false; // Highly unluckily
         }
@@ -40,11 +40,15 @@ public sealed class StationsMessageHistory
     /// </summary>
     /// <param name="stationUid">Station identifier</param>
     /// <param name="message">Message</param>
-    public bool AddRecord(EntityUid stationUid, MessengerContactMessage message, string from, string to)
+    public bool AddRecord(
+        EntityUid stationUid,
+        MessengerContactMessage message,
+        string from, EntityUid fromCartridgeLoaderUid,
+        string to, EntityUid toCartridgeLoaderUid)
     {
         if (!_stationMessages.ContainsKey(stationUid))
         {
-            if (AddStation(stationUid))
+            if (!AddStation(stationUid))
             {
                 return false;
             }
@@ -59,13 +63,13 @@ public sealed class StationsMessageHistory
         {
             return false; // Highly unluckily
         }
-        _stationExistingChats[stationUid][message.From].Add((message.To, to));
+        _stationExistingChats[stationUid][message.From].Add((message.To, fromCartridgeLoaderUid, to));
 
         if (!TryAddEmpty(_stationExistingChats[stationUid], message.To))
         {
             return false; // Highly unluckily
         }
-        _stationExistingChats[stationUid][message.To].Add((message.From, from));
+        _stationExistingChats[stationUid][message.To].Add((message.From, toCartridgeLoaderUid, from));
 
         _stationMessages[stationUid][message.GetHashCode()].Add(message);
         return true;
@@ -76,7 +80,7 @@ public sealed class StationsMessageHistory
     /// </summary>
     /// <param name="stationUid">Station identifier</param>
     /// <param name="messengerUid"><see cref="MessengerCartridgeComponent"/> uid</param>
-    public IEnumerable<(EntityUid idCardUid, string fullName)> GetExistingChats(EntityUid stationUid, EntityUid messengerUid)
+    public IEnumerable<(EntityUid idCardUid, EntityUid cartridgeLoader, string fullName)> GetExistingChats(EntityUid stationUid, EntityUid messengerUid)
     {
         if (_stationExistingChats.ContainsKey(stationUid))
         {
@@ -85,7 +89,7 @@ public sealed class StationsMessageHistory
                 return _stationExistingChats[stationUid][messengerUid];
             }
         }
-        return Array.Empty<(EntityUid, string)>();
+        return Array.Empty<(EntityUid, EntityUid, string)>();
     }
 
     /// <summary>
@@ -108,7 +112,7 @@ public sealed class StationsMessageHistory
     private bool TryAddEmpty<T1, T2>(ConcurrentDictionary<T1, T2> collection, T1 key)
         where T1 : notnull
     {
-        var val = default(T2);
+        var val = Activator.CreateInstance<T2>();
         return TryAdd(collection!, key, val);
     }
 
@@ -124,6 +128,6 @@ public sealed class StationsMessageHistory
                 return false; // Highly unluckily
             }
         }
-        return obj.Equals(collection[key]);
+        return true;
     }
 }
