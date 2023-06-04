@@ -17,12 +17,12 @@ public sealed class MessengerCartridgeUiEvent : CartridgeMessageEvent
     /// <summary>
     ///     Event args.
     /// </summary>
-    public readonly object Args;
+    public readonly object? Args;
 
     /// <summary>
     ///     .ctor
     /// </summary>
-    public MessengerCartridgeUiEvent(MessengerCartridgeUiEventType type, object args)
+    public MessengerCartridgeUiEvent(MessengerCartridgeUiEventType type, object? args = null)
     {
         Type = type;
         Args = args;
@@ -33,10 +33,21 @@ public sealed class MessengerCartridgeUiEvent : CartridgeMessageEvent
 ///     Message cartridge UI event types.
 /// </summary>
 [Serializable, NetSerializable]
-public enum MessengerCartridgeUiEventType
+public enum MessengerCartridgeUiEventType : byte
 {
-    GetChatContacts,
-    GetChatHistory,
-    SendMessage,
-    ChangeOnlineState
+    Unknown = 0,
+
+    /// <summary>
+    ///     Client => Server messages.
+    /// </summary>
+    GetChatContacts = 1,
+    GetChatHistory = 2,
+    SendMessage = 3,
+    ChangeOnlineState = 5,
+
+    /// <summary>
+    ///     Server => Client messages.
+    /// </summary>
+    NewMessage = 11,
+    PopupMessage = 12,
 }

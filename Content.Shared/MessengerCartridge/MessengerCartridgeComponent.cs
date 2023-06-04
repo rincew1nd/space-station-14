@@ -40,6 +40,11 @@ public sealed class MessengerContact
     public EntityUid IdCardUid { get; set; }
 
     /// <summary>
+    ///     CartridgeLoader uid.
+    /// </summary>
+    public EntityUid CartridgeLoaderUid { get; set; }
+
+    /// <summary>
     ///     Full name (Name + Surname).
     /// </summary>
     public string FullName { get; set; }
@@ -47,9 +52,10 @@ public sealed class MessengerContact
     /// <summary>
     ///     .ctor
     /// </summary>
-    public MessengerContact(EntityUid idCardUid, string fullName)
+    public MessengerContact(EntityUid idCardUid, EntityUid cartridgeLoaderUid, string fullName)
     {
         IdCardUid = idCardUid;
+        CartridgeLoaderUid = cartridgeLoaderUid;
         FullName = fullName;
     }
 }
@@ -92,8 +98,7 @@ public sealed class MessengerContactMessage
         To = to;
         Text = text;
 
-        _hashCode = (Math.Min(from.GetHashCode(), to.GetHashCode()), Math.Max(from.GetHashCode(), to.GetHashCode()))
-            .GetHashCode();
+        _hashCode = GetHashCode(from, to);
     }
 
     /// <summary>
@@ -102,5 +107,11 @@ public sealed class MessengerContactMessage
     public override int GetHashCode()
     {
         return _hashCode;
+    }
+
+    public static int GetHashCode(EntityUid from, EntityUid to)
+    {
+        return (Math.Min(from.GetHashCode(), to.GetHashCode()), Math.Max(from.GetHashCode(), to.GetHashCode()))
+            .GetHashCode();
     }
 }

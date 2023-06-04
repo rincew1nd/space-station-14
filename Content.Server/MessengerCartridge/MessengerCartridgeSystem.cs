@@ -22,40 +22,9 @@ public sealed class MessengerCartridgeSystem : SharedMessengerCartridgeSystem
         // Logger
         _sawmill = Logger.GetSawmill(typeof(MessengerCartridgeSystem).ToString());
 
-        // Cartridge event
-        SubscribeLocalEvent<MessengerCartridgeComponent, CartridgeAddedEvent>(OnInstall);
-
         // UI events
         SubscribeLocalEvent<MessengerCartridgeComponent, CartridgeMessageEvent>(OnUiMessage);
         SubscribeLocalEvent<MessengerCartridgeComponent, CartridgeUiReadyEvent>(OnUiReady);
-    }
-
-    /// <summary>
-    ///     TODO: Check do we even need it. I doubt it.
-    /// </summary>
-    private void OnInstall(EntityUid uid, MessengerCartridgeComponent component, CartridgeAddedEvent args)
-    {
-        Dirty(component);
-    }
-
-    /// <summary>
-    ///     Update the state of <see cref="MessengerCartridgeComponent"/>.
-    /// </summary>
-    public void UpdateContactInfo(EntityUid station, MessengerCartridgeComponent component, bool isOnline, EntityUid? idCard, string? fullName)
-    {
-        component.StationUid = station;
-        if (isOnline && idCard.HasValue)
-        {
-            component.IsOnline = true;
-            component.CurrentOwner = new MessengerContact(idCard.Value, fullName!);
-        }
-        else
-        {
-            component.IsOnline = false;
-            component.CurrentOwner = null;
-        }
-
-        Dirty(component);
     }
 
     #region UI events
@@ -100,7 +69,7 @@ public sealed class MessengerCartridgeSystem : SharedMessengerCartridgeSystem
                 MessengerCartridgeUiEventType.GetChatContacts => GetChatContacts(component),
                 MessengerCartridgeUiEventType.GetChatHistory => GetChatHistory(component, messageArgs),
                 MessengerCartridgeUiEventType.SendMessage => SendMessage(component, messageArgs),
-                MessengerCartridgeUiEventType.ChangeOnlineState => SetOnlineStatus(component, messageArgs),
+                MessengerCartridgeUiEventType.ChangeOnlineState => SetOnlineStatus(component),
                 _ => throw new ArgumentException("Unexpected message type")
             };
         }
@@ -131,7 +100,8 @@ public sealed class MessengerCartridgeSystem : SharedMessengerCartridgeSystem
         var chats = _messageServerSystem.GetChats(component);
         return new MessengerCartridgeUiState()
         {
-            Chats = chats.ToList()
+            Chats = chats.ToList(),
+            IsOnline = component.IsOnline
         };
     }
 
@@ -140,26 +110,84 @@ public sealed class MessengerCartridgeSystem : SharedMessengerCartridgeSystem
     /// </summary>
     private MessengerCartridgeUiState GetChatHistory(MessengerCartridgeComponent component, object? messageArgs)
     {
-        throw new NotImplementedException();
+        if (messageArgs is not EntityUid idUid)
+            return new MessengerCartridgeUiState();
+
+        var history = _messageServerSystem.GetChatHistory(component, idUid);
+        return new MessengerCartridgeUiState()
+        {
+            Messages = history.ToList()
+        };
     }
 
     /// <summary>
     ///     Send a message to a chat.
     /// </summary>
-    private MessengerCartridgeUiState SendMessage(MessengerCartridgeComponent component, object? messageArgs)
+    private MessengerCartridgeUiState? SendMessage(MessengerCartridgeComponent component, object? messageArgs)
     {
-        throw new NotImplementedException();
+        if (messageArgs is not (EntityUid idUid, string message))
+            return new MessengerCartridgeUiState() { UpdateEventType = MessengerCartridgeUiEventType.Unknown };
+
+        var isSuccessful = _messageServerSystem.SendMessage(component, idUid, message);
+        return isSuccessful
+            ? null
+            : new MessengerCartridgeUiState()
+            {
+                UpdateEventType = MessengerCartridgeUiEventType.PopupMessage,
+                PopupMessageText = "messenger-program-failed-delivery"
+            };
     }
 
     /// <summary>
     ///     Turn on/off messenger cartridge.
     /// </summary>
-    private MessengerCartridgeUiState SetOnlineStatus(MessengerCartridgeComponent component, object? messageArgs)
+    private MessengerCartridgeUiState SetOnlineStatus(MessengerCartridgeComponent component)
     {
-        if (messageArgs is not bool isOnline)
-            throw new ArgumentException("Argument is not online status");
+        return new MessengerCartridgeUiState { IsOnline = !component.IsOnline };
+    }
 
-        return new MessengerCartridgeUiState { IsOnline = isOnline };
+    #endregion
+
+    #region External methods and processors
+
+    /// <summary>
+    ///     Update the state of <see cref="MessengerCartridgeComponent"/>.
+    /// </summary>
+    public void UpdateContactInfo(
+        EntityUid station,
+        MessengerCartridgeComponent component,
+        bool isOnline,
+        EntityUid? idCard,
+        EntityUid? cartridgeLoaderUid,
+        string? fullName)
+    {
+        component.StationUid = station;
+        if (isOnline && idCard.HasValue && cartridgeLoaderUid.HasValue)
+        {
+            component.IsOnline = true;
+            component.CurrentOwner = new MessengerContact(idCard.Value, cartridgeLoaderUid.Value, fullName!);
+        }
+        else
+        {
+            component.IsOnline = false;
+            component.CurrentOwner = null;
+        }
+
+        Dirty(component);
+    }
+
+    public void NewMessageAlert(MessengerCartridgeComponent component, string senderFullName)
+    {
+        if (component.CurrentOwner == null)
+            return;
+
+        _cartridgeLoaderSystem?.UpdateCartridgeUiState(
+            component.CurrentOwner.CartridgeLoaderUid,
+            new MessengerCartridgeUiState()
+            {
+                UpdateEventType = MessengerCartridgeUiEventType.PopupMessage,
+                PopupMessageText = $"New message from {senderFullName}"
+            });
     }
 
     #endregion

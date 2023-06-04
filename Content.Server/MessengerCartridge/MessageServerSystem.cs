@@ -47,6 +47,8 @@ public sealed class MessageServerSystem : EntitySystem
         if (pda.IdSlot.Item != null && EntityManager.TryGetComponent<IdCardComponent>(pda.IdSlot.Item, out var idCardComponent))
             fullName = idCardComponent.FullName;
 
+        TryComp<CartridgeLoaderComponent>(pdaUid, out var cartridgeLoader);
+
         var oldIdCard = messengerCartridge.CurrentOwner?.IdCardUid ?? pda.IdSlot.Item ?? EntityUid.Invalid;
 
         _messengerCartridgeSystem.UpdateContactInfo(
@@ -54,6 +56,7 @@ public sealed class MessageServerSystem : EntitySystem
             messengerCartridge,
             args.IsIdCardInserted,
             pda.IdSlot.Item,
+            cartridgeLoader?.Owner,
             fullName);
 
         UpdateCache(oldIdCard, fullName, station.Value, args.IsIdCardInserted);
@@ -134,6 +137,49 @@ public sealed class MessageServerSystem : EntitySystem
             .ToList();
 
         return activeContacts.Concat(oldContacts).DistinctBy(m => m.IdCardUid).ToArray();
+    }
+
+    /// <summary>
+    ///     Get chat history for <see cref="MessengerCartridgeComponent"/> and other crew member.
+    /// </summary>
+    /// <param name="component"><see cref="MessengerCartridgeComponent"/></param>
+    /// <param name="messengerContact"><see cref="EntityUid"/> for a chat history</param>
+    public IEnumerable<MessengerContactMessage> GetChatHistory(MessengerCartridgeComponent component, EntityUid messengerContact)
+    {
+        if (component.CurrentOwner == null || messengerContact == component.CurrentOwner.IdCardUid)
+            return Array.Empty<MessengerContactMessage>();
+
+        var station = _stationSystem.GetOwningStation(component.StationUid);
+
+        if (station == null || !TryComp<StationMessageHistoryComponent>(station, out var stationMessageHistory))
+            return Array.Empty<MessengerContactMessage>();
+
+        var key = MessengerContactMessage.GetHashCode(component.CurrentOwner.IdCardUid, messengerContact);
+        return stationMessageHistory.History.GetRecords(station.Value, key).ToArray();
+    }
+
+    /// <summary>
+    ///     Send a message to other crew member.
+    /// </summary>
+    /// <param name="component">Sender <see cref="MessengerCartridgeComponent"/></param>
+    /// <param name="idUid">Receiver IdCard id</param>
+    /// <param name="message">Message</param>
+    public bool SendMessage(MessengerCartridgeComponent component, EntityUid idUid, string message)
+    {
+        if (component.CurrentOwner != null)
+            return false;
+
+        var receiverComponent = EntityQuery<MessengerCartridgeComponent>()
+            .FirstOrDefault(mc => mc.CurrentOwner != null
+                                  && mc.CurrentOwner.IdCardUid == idUid
+                                  && mc.StationUid == component.StationUid
+                                  && mc.IsOnline);
+
+        if (receiverComponent == null)
+            return false;
+
+        _messengerCartridgeSystem.NewMessageAlert(receiverComponent, component.CurrentOwner!.FullName);
+        return true;
     }
 
     /// <summary>

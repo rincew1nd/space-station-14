@@ -26,5 +26,15 @@ public sealed class MessengerCartridgeUiState : BoundUserInterfaceState
     /// <summary>
     ///     Online status.
     /// </summary>
-    public bool IsOnline { get; set; } = false;
+    public bool? IsOnline { get; set; }
+
+    /// <summary>
+    ///     Update event type.
+    /// </summary>
+    public MessengerCartridgeUiEventType UpdateEventType { get; set; }
+
+    /// <summary>
+    ///     User notification about something.
+    /// </summary>
+    public string? PopupMessageText { get; set; }
 }

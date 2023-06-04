@@ -1,4 +1,5 @@
 ﻿using Content.Client.UserInterface.Fragments;
+using Content.Shared.CartridgeLoader;
 using Content.Shared.MessengerCartridge;
 using Robust.Client.GameObjects;
 using Robust.Client.UserInterface;
@@ -8,11 +9,7 @@ namespace Content.Client.MessengerCartridge;
 public sealed class MessengerUi : UIFragment
 {
     private MessengerCartridgeUiFragment? _fragment;
-
-    public const int ChatsList = 0;
-    public const int ChatHistory = 1;
-
-    private int _currentView;
+    private BoundUserInterface? _userInterface;
 
     public override Control GetUIFragmentRoot()
     {
@@ -22,24 +19,26 @@ public sealed class MessengerUi : UIFragment
     public override void Setup(BoundUserInterface userInterface, EntityUid? fragmentOwner)
     {
         _fragment = new MessengerCartridgeUiFragment();
+        _userInterface = userInterface;
 
+        _fragment.ChangeOnlineStatusButtonPressed += () =>
+            SendMessengerUpdateEvent(MessengerCartridgeUiEventType.ChangeOnlineState);
+        _fragment.OnBackButtonPressed += () =>
+            SendMessengerUpdateEvent(MessengerCartridgeUiEventType.GetChatContacts);
         _fragment.OnHistoryViewPressed += from =>
-        {
-            _currentView = ChatHistory;
-        };
-
+            SendMessengerUpdateEvent(MessengerCartridgeUiEventType.GetChatHistory, from);
         _fragment.OnMessageSendButtonPressed += (to, text) =>
-        {
+            SendMessengerUpdateEvent(MessengerCartridgeUiEventType.GetChatHistory, (to, text));
+    }
 
-        };
+    private void SendMessengerUpdateEvent(MessengerCartridgeUiEventType type, object? args = null)
+    {
+        if (_userInterface == null)
+            return;
 
-        _fragment.OnBackButtonPressed += _ =>
-        {
-            if (_currentView != ChatsList)
-            {
-                _currentView--;
-            }
-        };
+        var ev = new MessengerCartridgeUiEvent(type, args);
+        var message = new CartridgeUiMessage(ev);
+        _userInterface.SendMessage(message);
     }
 
     public override void UpdateState(BoundUserInterfaceState state)
