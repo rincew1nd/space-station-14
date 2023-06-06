@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.IO;
+using System.Net;
+using System.Threading.Tasks;
 using Content.Server.Chat.Systems;
 using Content.Shared.Corvax.CCCVars;
 using Content.Shared.Corvax.TTS;
@@ -37,29 +39,30 @@ public sealed partial class TTSSystem : EntitySystem
 
         SubscribeLocalEvent<TransformSpeechEvent>(OnTransformSpeech);
         SubscribeLocalEvent<TTSComponent, EntitySpokeEvent>(OnEntitySpoke);
-        SubscribeLocalEvent<TTSComponent, RadioSpokeEvent>(OnRadioReceiveEvent);
+        SubscribeLocalEvent<RadioSpokeEvent>(OnRadioReceiveEvent);
         SubscribeLocalEvent<AnnouncementSpokeEvent>(OnAnnouncementSpoke);
         SubscribeLocalEvent<RoundRestartCleanupEvent>(OnRoundRestartCleanup);
 
         _netMgr.RegisterNetMessage<MsgRequestTTS>(OnRequestTTS);
     }
 
-    private void OnRadioReceiveEvent(EntityUid uid, TTSComponent receiverComponent, RadioSpokeEvent args)
+    private void OnRadioReceiveEvent(RadioSpokeEvent args)
     {
-        if (!_isEnabled ||
-            args.Message.Length > MaxMessageChars)
-        {
+        if (!_isEnabled || args.Message.Length > MaxMessageChars)
             return;
-        }
+
         if (!TryComp(args.Source, out TTSComponent? senderComponent))
             return;
+
         var voiceId = senderComponent.VoicePrototypeId;
-        var voiceEv = new TransformSpeakerVoiceEvent(uid, voiceId);
-        RaiseLocalEvent(uid, voiceEv);
+        var voiceEv = new TransformSpeakerVoiceEvent(args.Source, voiceId);
+        RaiseLocalEvent(args.Source, voiceEv);
         voiceId = voiceEv.VoiceId;
+
         if (!_prototypeManager.TryIndex<TTSVoicePrototype>(voiceId, out var protoVoice))
             return;
-        HandleRadio(uid, args.Message, protoVoice.Speaker);
+
+        HandleRadio(args.Receivers, args.Message, protoVoice.Speaker);
     }
 
     private async void OnAnnouncementSpoke(AnnouncementSpokeEvent args)
@@ -156,13 +159,16 @@ public sealed partial class TTSSystem : EntitySystem
         }
     }
 
-    private async void HandleRadio(EntityUid uid, string message, string speaker)
+    private async void HandleRadio(EntityUid[] uids, string message, string speaker)
     {
         var soundData = await GenerateTTS(message, speaker, false, true);
         if (soundData is null)
             return;
-        if (TryComp(uid, out ActorComponent? actor))
-            RaiseNetworkEvent(new PlayTTSEvent(uid, soundData, true), Filter.SinglePlayer(actor.PlayerSession));
+
+        foreach (var uid in uids)
+        {
+            RaiseNetworkEvent(new PlayTTSEvent(uid, soundData, true), Filter.Entities(uid));
+        }
     }
 
     // ReSharper disable once InconsistentNaming
