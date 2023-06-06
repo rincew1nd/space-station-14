@@ -263,7 +263,7 @@ public sealed class TTSManager
         finally
         {
             semaphore.Release();
-            Locks.TryRemove(key, out semaphore);
+            Locks.TryRemove(key, out _);
         }
     }
 
