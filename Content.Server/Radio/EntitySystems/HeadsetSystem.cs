@@ -104,6 +104,7 @@ public sealed class HeadsetSystem : SharedHeadsetSystem
         if (TryComp(actorUid, out ActorComponent? actor))
         {
             _netMan.ServerSendMessage(args.ChatMsg, actor.PlayerSession.ConnectedClient);
+            args.Receivers.Add(actorUid);
         }
     }
 
