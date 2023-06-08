@@ -927,6 +927,8 @@ namespace Content.Shared.CCVar
 
         public static readonly CVarDef<bool> LoocEnabled = CVarDef.Create("looc.enabled", true, CVar.NOTIFY | CVar.REPLICATED);
 
+        public static readonly CVarDef<bool> DelayEnabled = CVarDef.Create("delay.enabled", false, CVar.NOTIFY | CVar.REPLICATED);
+
         public static readonly CVarDef<bool> AdminLoocEnabled =
             CVarDef.Create("looc.enabled_admin", true, CVar.NOTIFY);
 
@@ -1328,6 +1330,12 @@ namespace Content.Shared.CCVar
         public static readonly CVarDef<float> AfkTime =
             CVarDef.Create("afk.time", 60f, CVar.SERVERONLY);
 
+        public static readonly CVarDef<bool> AfkTimeKickEnabled =
+            CVarDef.Create("afk.time_kick_enabled", true, CVar.SERVERONLY);
+
+        public static readonly CVarDef<float> AfkTimeKick =
+            CVarDef.Create("afk.time_kick", 600f, CVar.SERVERONLY);
+
         /*
          * IC
          */
@@ -1620,5 +1628,16 @@ namespace Content.Shared.CCVar
         /// </summary>
         public static readonly CVarDef<int> GCMaximumTimeMs =
             CVarDef.Create("entgc.maximum_time_ms", 5, CVar.SERVERONLY);
+
+        /*
+         * Replays
+         */
+
+        /// <summary>
+        ///     Whether or not to record admin chat. If replays are being publicly distributes, this should probably be
+        ///     false.
+        /// </summary>
+        public static readonly CVarDef<bool> ReplayRecordAdminChat =
+            CVarDef.Create("replay.record_admin_chat", false, CVar.SERVERONLY);
     }
 }
